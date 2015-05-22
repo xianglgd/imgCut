@@ -2,6 +2,10 @@
 
 var opacityVal = 0.6;
 var stopDragOpacity = 0;
+var KEYRIGHT = 39;
+var KEYTOP = 38;
+var KEYDOWN = 40;
+var KEYLEFT = 37;
 
 function imgCut (imgDom, config) {
 	return new ImgCut(imgDom,config);
@@ -19,6 +23,7 @@ function ImgCut(imgDom, config) {
 
 	this.bounds = config.bounds || [0,0,0,0]; //[x1, y1, x2, y2]
 	this.haveCut = false;
+	this.cutOnFocus = false;
 	this.$cutImg = $cutImg = $("<img src='"+ $img.attr("src") +"'>"); 
 	this.$cut = $cut = $("<div class='cutDiv'></div>");
 	this.cutDrag = false;
@@ -47,10 +52,12 @@ ImgCut.prototype.setOpacity = function(val) {
 ImgCut.prototype.deleteCut = function(val) {
 	this.$cut.css("display","none");
 	this.haveCut = false;
+	this.cutOnFocus = false;
 };
 ImgCut.prototype.initCut = function(bounds) {
 	this.haveCut = true;
 	this.setBounds(bounds);
+	this.cutOnFocus = true;
 	this.$cut.css("display","block");	
 };
 ImgCut.prototype.setBounds = function(bounds) {//传入的为两个对角点，左上，右下，或者 右上，左下
@@ -98,7 +105,6 @@ ImgCut.prototype.getBounds = function() {
 };
 ImgCut.prototype.checkBounds = function(bounds) {
 	if(bounds[0]<0 || bounds[1]<0 || bounds[2] > this.imgBounds[2] || bounds[3] > this.imgBounds[3]){
-		console.log(1);
 		return false;
 	}
 	return true;
@@ -109,7 +115,46 @@ function bindEvent (img) {
 
 	cutBindEvent(img.$cut,img);
 
-	$(window).on("mouseup", img, windowMouseUp)
+	windowBindEvent($(window), img);
+}
+
+function windowBindEvent ($window, img) {
+	$window.on("mouseup", img, windowMouseUp);
+	$window.on("mousedown", img, windowMouseDown);
+	$window.on("keydown", img, windowKeyDown);
+}
+
+function windowMouseUp (event) {
+	var img = event.data;
+	stopDrag(img);
+	img.cutDrag = false;
+}
+
+function windowMouseDown(event) {
+	var img = event.data;
+	img.cutOnFocus = false;
+}
+
+function windowKeyDown (event) {
+	var img = event.data;
+	if (!img.cutOnFocus) {
+		return;
+	};
+	requestAnimationFrame(function() {
+		var keyCode = event.keyCode;
+		var bounds = img.getBounds();
+
+		if(keyCode == KEYLEFT){
+			bounds = [bounds[0]-1, bounds[1], bounds[2]-1, bounds[3]];
+		}else if(keyCode == KEYRIGHT){
+			bounds = [bounds[0]+1, bounds[1], bounds[2]+1, bounds[3]];
+		}else if(keyCode == KEYTOP){
+			bounds = [bounds[0], bounds[1]-1, bounds[2], bounds[3]-1];
+		}else if(keyCode == KEYDOWN){
+			bounds = [bounds[0], bounds[1]+1, bounds[2], bounds[3]+1];
+		}
+		img.setBounds(bounds);
+	})
 }
 
 function wrapBindEvent($wrap, obj) {
@@ -120,12 +165,6 @@ function wrapBindEvent($wrap, obj) {
 function cutBindEvent($cut, obj) {
 	$cut.on("mousedown",obj,cutMouseDown);
 	$cut.on("mouseup",obj,cutMouseUp);
-}
-
-function windowMouseUp (event) {
-	var img = event.data;
-	stopDrag(img);
-	img.cutDrag = false;
 }
 
 function wrapMouseMove (event) {
@@ -156,11 +195,13 @@ function wrapMouseDown(event) {
 	var img = event.data;
 	img.dragPosition = [event.offsetX, event.offsetY];
 	startDrag(img,[event.offsetX, event.offsetY, event.offsetX, event.offsetY]);
+	event.stopPropagation();
 }
 
 function cutMouseDown(event) {
 	var img = event.data;
 	img.cutDrag = true;
+	img.cutOnFocus = true;
 	img.cutMousePosition = [event.clientX, event.clientY];
 	event.stopPropagation();
 }
@@ -184,6 +225,7 @@ function stopDrag (img) {
 		img = img.data;
 	}
 	var $cut = img.$cut;
+
 	if($cut.height() == 0 && $cut.width() == 0){
 		img.haveCut = false;
 		img.deleteCut();
