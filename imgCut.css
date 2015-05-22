@@ -1,0 +1,28 @@
+#testImg{
+	position: absolute;
+	left: 200px;
+}
+.wrapDiv{
+	position: absolute;
+	background-color: black;
+	opacity: 0;
+	cursor: crosshair;
+}
+.cutDiv{
+	z-index: 360;
+	left: 0;
+	top: 0;
+	height: 0;
+	width: 0;
+	position: absolute;	
+	overflow: hidden;
+	display: none;
+	border: 1px #fff dashed;
+	cursor: move;
+	transform: translate3d(0,0,0);
+	-webkit-transform: translate3d(0,0,0);	/* Safari 和 Chrome */
+	-moz-transform: translate3d(0,0,0);
+}
+.cutImg{
+	position: absolute;	
+}
