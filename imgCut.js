@@ -1,4 +1,4 @@
-(function(window,$){
+(function(window,$,undefined){
 
 var opacityVal = 0.6;
 var stopDragOpacity = 0;
@@ -24,12 +24,15 @@ function ImgCut(imgDom, config) {
 	this.bounds = config.bounds || [0,0,0,0]; //[x1, y1, x2, y2]
 	this.haveCut = false;
 	this.cutOnFocus = false;
-	this.$cutImg = $cutImg = $("<img src='"+ $img.attr("src") +"'>"); 
-	this.$cut = $cut = $("<div class='cutDiv'></div>");
+	this.$cutImg = $cutImg = $("<img src='"+ $img.attr("src") +"' class='cutImg'>"); 
+	this.$cut = $cut = createCut($cutImg, this);
 	this.cutDrag = false;
 	this.cutMousePosition = [0,0];
-	$cut.append($cutImg);
-	$cutImg.addClass("cutImg");
+
+	this.$dragDiv;
+	this.resize = false;
+	this.resizePosition = [0,0];
+	this.resizeKind = undefined;
 
 	this.$wrap = $("<div class='wrapDiv'></div>").append($cut);
 	this.$wrap.css({
@@ -127,6 +130,7 @@ function windowBindEvent ($window, img) {
 function windowMouseUp (event) {
 	var img = event.data;
 	stopDrag(img);
+	img.resize = false;
 	img.cutDrag = false;
 }
 
@@ -164,13 +168,12 @@ function wrapBindEvent($wrap, obj) {
 
 function cutBindEvent($cut, obj) {
 	$cut.on("mousedown",obj,cutMouseDown);
-	$cut.on("mouseup",obj,cutMouseUp);
 }
 
 function wrapMouseMove (event) {
 	var img = event.data;
 	event.preventDefault();
-	if(!img.startDrag && !img.cutDrag){
+	if(!img.startDrag && !img.cutDrag && !img.resize){
 		return;
 	}
 	if(img.startDrag){
@@ -189,6 +192,61 @@ function wrapMouseMove (event) {
 			img.setBounds(bounds);
 		});
 	}
+	if(img.resize){
+		requestAnimationFrame(function() {
+			var bounds = img.getBounds();
+			var point = [0,0];
+
+			var setX = event.clientX - img.resizePosition[0];
+			var setY = event.clientY - img.resizePosition[1];
+			img.resizePosition[0] = event.clientX;
+			img.resizePosition[1] = event.clientY;
+
+			switch(img.resizeKind){
+				case "l" :{
+					point = [bounds[2], bounds[3]];//以右下为基点
+					bounds = [bounds[0]+setX, bounds[1]].concat(point);
+					break;
+				} ;
+				case "lt":{
+					point = [bounds[2], bounds[3]];//以右下为基点
+					bounds = [bounds[0]+setX, bounds[1]+setY].concat(point);
+					break;
+				} ;
+				case "t" : {
+					point = [bounds[2], bounds[3]];//以右下为基点
+					bounds = [bounds[0], bounds[1]+setY].concat(point);
+					break;
+				};
+				case "r" :{
+					point = [bounds[0], bounds[1]];//以左上为基点
+					bounds = [bounds[2]+setX, bounds[3]].concat(point);
+					break;
+				};
+				case "b" :{
+					point = [bounds[0], bounds[1]];//以左上为基点
+					bounds = [bounds[2], bounds[3]+setY].concat(point);
+					break;
+				};
+				case "rb": {
+					point = [bounds[0], bounds[1]];//以左上为基点
+					bounds = [bounds[2]+setX, bounds[3]+setY].concat(point);
+					break;
+				};
+				case "lb" : {
+					point = [bounds[2], bounds[1]];//以右上为基点
+					bounds = [bounds[0]+setX, bounds[3]+setY].concat(point);
+					break;
+				};
+				case "rt" : {
+					point = [bounds[0], bounds[3]];//以左下为基点
+					bounds = [bounds[2]+setX, bounds[1]+setY].concat(point);
+					break;
+				};
+			}
+			img.setBounds(bounds);
+		});
+	}
 }
 
 function wrapMouseDown(event) {
@@ -199,20 +257,29 @@ function wrapMouseDown(event) {
 }
 
 function cutMouseDown(event) {
+	event.preventDefault();
 	var img = event.data;
 	img.cutDrag = true;
 	img.cutOnFocus = true;
 	img.cutMousePosition = [event.clientX, event.clientY];
+	
 	event.stopPropagation();
 }
 
-function cutMouseUp(event) {
+function dragMouseDown (event) {
 	var img = event.data;
-	img.cutDrag = false;
+	img.resizeKind = $(event.target || event.srcElement).attr("data-kind");
+	if(!img.resizeKind){
+		return;
+	}
+	img.resize = true;
+	img.resizePosition = [event.clientX, event.clientY];
+	event.stopPropagation();
 }
 
 function  startDrag(img,bounds) {
 	img.haveCut = false;
+	img.$dragDiv.hide();
 	img.deleteCut();
 	img.setOpacity(opacityVal);
 
@@ -231,10 +298,33 @@ function stopDrag (img) {
 		img.deleteCut();
 		img.setOpacity(stopDragOpacity);
 	}
+	img.$dragDiv.show();
 	img.startDrag = false;
 }
 
+function createCut ($cutImg, img) {
+	var $cut =  $("\
+		<div class='cutDiv'>\
+			<div class='dragDiv'>\
+				<div class='resize-dragbar resize-t' data-kind='t'></div>\
+				<div class='resize-dragbar resize-b' data-kind='b'></div>\
+				<div class='resize-dragbar resize-l' data-kind='l'></div>\
+				<div class='resize-dragbar resize-r' data-kind='r'></div>\
+				<div class='resize-handle resize-lt' data-kind='lt'></div>\
+				<div class='resize-handle resize-lb' data-kind='lb'></div>\
+				<div class='resize-handle resize-rt' data-kind='rt'></div>\
+				<div class='resize-handle resize-rb' data-kind='rb'></div>\
+			</div>\
+			<div class='imgWrap'>\
+			</div>\
+		</div>");
+
+	$(".imgWrap",$cut).append($cutImg);
+	img.$dragDiv = $(".dragDiv",$cut).on("mousedown", img, dragMouseDown);
+
+	return $cut;
+}
 
 window.imgCut = imgCut;
 
-})(window,jQuery)
+})(window,jQuery,undefined)
