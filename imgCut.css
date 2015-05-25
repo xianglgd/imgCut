@@ -2,13 +2,13 @@
 	position: absolute;
 	left: 200px;
 }
-.wrapDiv{
+.imgCutWrapDiv{
 	position: absolute;
 	background-color: black;
 	opacity: 0;
 	cursor: crosshair;
 }
-.cutDiv{
+.imgCutWrapDiv .cutDiv{
 	z-index: 360;
 	left: 0;
 	top: 0;
@@ -22,24 +22,24 @@
 	-webkit-transform: translate3d(0,0,0);	/* Safari 和 Chrome */
 	-moz-transform: translate3d(0,0,0);
 }
-.cutImg{
+.imgCutWrapDiv .cutImg{
 	position: absolute;	
 }
-.dragDiv{
+.imgCutWrapDiv .dragDiv{
 	position: absolute;
 	overflow: visible;
 	width: 100%;
 	height: 100%;
 	z-index: 80;		
 }
-.imgWrap{
+.imgCutWrapDiv .imgWrap{
 	width: 100%;
 	height: 100%;
 	position: absolute;
 	overflow: hidden;
 	z-index: 79;
 }
-.resize-handle{
+.imgCutWrapDiv .resize-handle{
 	width: 7px;
 	height: 7px;
 	position: absolute;
@@ -48,60 +48,60 @@
 	opacity: 0.5;
 	z-index: 101;
 }
-.resize-dragbar{
+.imgCutWrapDiv .resize-dragbar{
 	position: absolute;
 	z-index: 100;
 }
-.resize-t{
+.imgCutWrapDiv .resize-t{
 	cursor: n-resize;
 	width: 100%;
 	height: 7px;
 	top: 0px;
 	margin-top: -4px;
 }
-.resize-b{
+.imgCutWrapDiv .resize-b{
 	cursor: s-resize;
 	width: 100%;
 	height: 7px;
 	bottom: 0px;
 	margin-bottom: -4px;
 }
-.resize-l{
+.imgCutWrapDiv .resize-l{
 	cursor: w-resize;
 	width: 7px;
 	height: 100%;
 	left: 0px;
 	margin-left: -4px;
 }
-.resize-r{
+.imgCutWrapDiv .resize-r{
 	cursor: e-resize;
 	width: 7px;
 	height: 100%;
 	right: 0px;
 	margin-right: -4px;
 }
-.resize-lt{
+.imgCutWrapDiv .resize-lt{
 	cursor:nw-resize;
 	left: 0;
 	top: 0;
 	margin-left: -4px;
 	margin-top: -4px;
 }
-.resize-lb{
+.imgCutWrapDiv .resize-lb{
 	cursor:sw-resize;
 	left: 0;
 	bottom: 0;
 	margin-left: -4px;
 	margin-bottom: -4px;
 }
-.resize-rt{
+.imgCutWrapDiv .resize-rt{
 	cursor: ne-resize;
 	right: 0;
 	top: 0;
 	margin-right: -4px;
 	margin-top: -4px;
 }
-.resize-rb{
+.imgCutWrapDiv .resize-rb{
 	cursor: se-resize;
 	right: 0;
 	bottom: 0;
