@@ -71,23 +71,11 @@ ImgCut.prototype.setBounds = function(bounds) {//传入的为两个对角点，�
 		stopDrag(this);
 		return;
 	}
+
+	bounds = this.checkBounds(bounds)
+	this.bounds = bounds;
 	var height = bounds[3] - bounds[1];
 	var width = bounds[2] - bounds[0];
-	if((width > 0 && height > 0) || (width < 0 && height < 0)){ //如果是左上，右下
-		if(width < 0){
-			bounds = [bounds[2], bounds[3], bounds[0], bounds[1]];
-		}
-	}else{
-		if(width > 0){
-			bounds = [bounds[0], bounds[3], bounds[2], bounds[1]];
-		}else{
-			bounds = [bounds[2], bounds[1], bounds[0], bounds[3]];
-		}
-	}
-	this.checkBounds(bounds)
-	this.bounds = bounds;
-	height = bounds[3] - bounds[1];
-	width = bounds[2] - bounds[0];
 	this.$cut.css({
 		"left": this.bounds[0] ,
 		"top": this.bounds[1] ,
@@ -108,6 +96,7 @@ ImgCut.prototype.getBounds = function() {
 	return false;
 };
 ImgCut.prototype.checkBounds = function(bounds) {
+	bounds = resetBounds(bounds);
 	if(bounds[0] < 0){
 		bounds[0] = 0;
 	}
@@ -120,7 +109,7 @@ ImgCut.prototype.checkBounds = function(bounds) {
 	if(bounds[3] > this.imgBounds[3]){
 		bounds[3] = this.imgBounds[3];
 	}
-	return true;
+	return bounds;
 };
 
 function bindEvent (img) {
@@ -341,6 +330,23 @@ function stopDrag (img) {
 	}
 	img.$dragDiv.show();
 	img.dragKind = "";
+}
+
+function  resetBounds(bounds) { //把任意两个对角点的坐标 转换为 左上，右下
+	var height = bounds[3] - bounds[1];
+	var width = bounds[2] - bounds[0];
+	if((width > 0 && height > 0) || (width < 0 && height < 0)){ //如果是左上，右下
+		if(width < 0){
+			bounds = [bounds[2], bounds[3], bounds[0], bounds[1]];
+		}
+	}else{
+		if(width > 0){
+			bounds = [bounds[0], bounds[3], bounds[2], bounds[1]];
+		}else{
+			bounds = [bounds[2], bounds[1], bounds[0], bounds[3]];
+		}
+	}
+	return bounds;
 }
 
 function createCut ($cutImg, img) {
