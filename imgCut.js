@@ -62,7 +62,7 @@ ImgCut.prototype.deleteCut = function(val) {
 };
 ImgCut.prototype.initCut = function(bounds) {
 	this.haveCut = true;
-	this.setBounds(bounds);
+	drawBounds(this, bounds, true);
 	this.cutOnFocus = true;
 	this.$cut.css("display","block");	
 };
@@ -76,7 +76,7 @@ ImgCut.prototype.setRatio = function (val) {
 	}
 	var bounds = this.getBounds();
 	bounds = calculateRatio(this, bounds);
-	this.setBounds(bounds);
+	drawBounds(this, bounds);
 	return true;
 }
 ImgCut.prototype.setBounds = function(bounds) {//传入的为两个对角点，左上，右下，或者 右上，左下
@@ -87,31 +87,12 @@ ImgCut.prototype.setBounds = function(bounds) {//传入的为两个对角点，�
 		stopDrag(this);
 		return;
 	}
-	this.haveCut = true;
 	bounds = resetBounds(bounds);	
 	if(this.aspectRatio!==0){
 		bounds = calculateRatio(this, bounds);
 	}
-	bounds = this.checkBounds(bounds);
-	if(!bounds){
-		return;
-	}
-	this.bounds = bounds;
-	for(var i in bounds){
-		bounds[i] = Math.round(bounds[i]);
-	}
-	var height = bounds[3] - bounds[1];
-	var width = bounds[2] - bounds[0];
-	this.$cut.css({
-		"left": this.bounds[0] ,
-		"top": this.bounds[1] ,
-		"width": Math.abs(width),
-		"height": Math.abs(height)
-	});
-	this.$cutImg.css({
-		"left": -this.bounds[0] ,
-		"top": -this.bounds[1] 
-	});
+	
+	drawBounds(this, bounds, true);
 	return true;
 };
 ImgCut.prototype.getBounds = function() {
@@ -121,55 +102,63 @@ ImgCut.prototype.getBounds = function() {
 	return false;
 };
 ImgCut.prototype.checkBounds = function(bounds) {
-	var beforeBounds = [bounds[0], bounds[1], bounds[2], bounds[3]];
-	var position = "";//lt or rb
-	if(bounds[0] < 0){
-		if(this.aspectRatio!==0){
-			return false;
+	var dragKind = this.dragKind;
+	var basePosition = [];
+	var position = [];
+	if(this.aspectRatio!==0 && dragKind != "cutDrag"){
+		if(dragKind == "startDrag"){ //找出基准点
+			basePosition = [this.dragPosition[0],this.dragPosition[1]];
+		}else if(dragKind == "resize"){
+			basePosition = [this.resizePosition[2],this.resizePosition[3]];	
+		}else {
+			basePosition = null;
 		}
-		bounds[0] = 0;//重置左上角坐标后，右下角坐标需要重置
-		position = "rb";
+
+		if(bounds[0] == basePosition[0]){//找出基准点的对立点
+			position[0] = bounds[2];
+		}else{
+			position[0] = bounds[0];
+		}
+
+		if(bounds[1] == basePosition[1]){//找出基准点的对立点
+			position[1] = bounds[3];
+		}else{
+			position[1] = bounds[1];
+		}
+	}
+	var width = position[0] - basePosition[0];
+	var height = position[1] - basePosition[1];
+
+	if(bounds[0] < 0){
+		if(this.aspectRatio!==0 && dragKind != "cutDrag"){
+			width-= bounds[0];
+		}
+		bounds[0] = 0;
 	}
 	if(bounds[1] < 0){
-		if(this.aspectRatio!==0){
-			return false;
+		if(this.aspectRatio!==0 && dragKind != "cutDrag"){
+			height-= bounds[1];
 		}
 		bounds[1] = 0;
-		position = "rb";
 	}
 	if(bounds[2] > this.imgBounds[2]){
-		if(this.aspectRatio!==0){
-			return false;
+		if(this.aspectRatio!==0 && dragKind != "cutDrag"){
+			width = width - bounds[2] + this.imgBounds[2];
 		}
-		bounds[2] = this.imgBounds[2];//重置右下角坐标后，左上角坐标需要重置
-		position = "lt";
+		bounds[2] = this.imgBounds[2];
 	}
 	if(bounds[3] > this.imgBounds[3]){
-		if(this.aspectRatio!==0){
-			return false;
+		if(this.aspectRatio!==0 && dragKind != "cutDrag"){
+			height = height - bounds[3] + this.imgBounds[3];
 		}
 		bounds[3] = this.imgBounds[3];
-		position = "lt";
 	}
-	return bounds;
-	// if(this.aspectRatio !== 0){
-	// 	var setW = Math.abs( bounds[2] - bounds[0] - (beforeBounds[2] - beforeBounds[0]) );
-	// 	var setH = Math.abs( bounds[3] - bounds[1] - (beforeBounds[3] - beforeBounds[1]) );
-	// 	var resetH = this.aspectRatio * setH;
-	// 	if(setW > resetH){
-	// 		setW = resetH;
-	// 	}else{
-	// 		setH = setW/this.aspectRatio;
-	// 	}
-	// 	if(position == "lt"){
-	// 		bounds[0] = bounds[0] - setW;
-	// 		bounds[1] = bounds[1] - setH;
-	// 	}else if(position == "rb"){
-	// 		bounds[2] = bounds[2] + setW;
-	// 		bounds[3] = bounds[3] + setH;
-	// 	}
-	// }
-	return bounds;
+	if(this.aspectRatio!==0 && dragKind != "cutDrag"){
+		var obj = getSetXY(width, height, this.aspectRatio, true);
+		return resetBounds(basePosition.concat(basePosition[0] + obj.setX, basePosition[1] + obj.setY));
+	}else{
+		return bounds;
+	}
 };
 
 function bindEvent (img) {
@@ -237,6 +226,7 @@ function cutBindEvent($cut, obj) {
 function wrapMouseDown(event) {
 	var img = event.data;
 	img.dragPosition = [event.offsetX, event.offsetY];
+	//img.dragKind = "startDrag";
 	startDrag(img,[event.offsetX, event.offsetY, event.offsetX, event.offsetY]);
 	$(window).on("mousemove", img, windowMouseMove);
 	event.stopPropagation();
@@ -312,7 +302,8 @@ function startInitCut(event, img){
 	setY = obj.setY;
 
 	var bounds = [img.dragPosition[0],img.dragPosition[1], img.dragPosition[0] + setX, img.dragPosition[1] + setY];
-	img.setBounds(bounds);
+	
+	drawBounds(img, bounds);
 }
 
 function startDragCut(event, img){
@@ -339,43 +330,97 @@ function startDragCut(event, img){
 		pointlt[1] = pointrb[1] - height;
 	}
 	var bounds = pointlt.concat(pointrb);
-	img.setBounds(bounds);
+	drawBounds(img, bounds);
 }
 
 function startResizeCut(event, img){
 	var setX = event.clientX - img.resizePosition[0];
 	var setY = event.clientY - img.resizePosition[1];
+	var width = Math.abs(img.resizePosition[6]);
+	var height = Math.abs(img.resizePosition[7]);
+	var oneDirection = true;
 	switch(img.resizeKind){
-		case "l" :;
-		case "r" :{ // 只发生横向X变化		
-			setY = 0;
+		case "l" :{
 			if(img.aspectRatio!==0){
-				setY = setX / img.aspectRatio;
+				if(setX > width){
+					setX = setX - width;
+					setY = -setX / img.aspectRatio;
+				}else{
+					setY = ( setX / img.aspectRatio);
+					setX = img.resizePosition[6] + setX;
+					setY = img.resizePosition[7] + setY;	
+				}
+			}else{
+				setY = 0;
 			}
-			var bounds = [img.resizePosition[2], img.resizePosition[3], img.resizePosition[4] + setX, img.resizePosition[5] + setY];
 			break;
 		};
-		case "t" :;
-		case "b" :{ // 只发生纵向Y变化		
-			setX = 0;
+		case "r" :{ // 只发生横向X变化		
 			if(img.aspectRatio!==0){
-				setX = setY * img.aspectRatio;
+				if(setX < -width){
+					setX = setX + width;
+					setY = -setX / img.aspectRatio;
+				}else{
+					setY = ( setX / img.aspectRatio);
+					setX = img.resizePosition[6] + setX;
+					setY = img.resizePosition[7] + setY;	
+				}
+			}else{
+				setY = 0;
 			}
-			var bounds = [img.resizePosition[2], img.resizePosition[3], img.resizePosition[4] + setX, img.resizePosition[5] + setY];
+			// var bounds = [img.resizePosition[2], img.resizePosition[3], img.resizePosition[4] + setX, img.resizePosition[5] + setY];
+			break;
+		};
+		case "t" :{
+			if(img.aspectRatio!==0){
+				if(setY > height){
+					setY = setY - height;
+					setX = -setY * img.aspectRatio;
+				}else{
+					setX = ( setY * img.aspectRatio);
+					setX = img.resizePosition[6] + setX;
+					setY = img.resizePosition[7] + setY;	
+				}
+			}else{
+				setX = 0;
+			}
+			break;
+		};
+		case "b" :{ // 只发生纵向Y变化		
+			if(img.aspectRatio!==0){
+				if(setY < -height){
+					setY = setY + height;
+					setX = -setY * img.aspectRatio;
+				}else{
+					setX = ( setY * img.aspectRatio);
+					setX = img.resizePosition[6] + setX;
+					setY = img.resizePosition[7] + setY;	
+				}
+			}else{
+				setX = 0;
+			}
+			// var bounds = [img.resizePosition[2], img.resizePosition[3], img.resizePosition[4] + setX, img.resizePosition[5] + setY];
 			break;
 		};
 		default :{
+			oneDirection = false;
 			setX = img.resizePosition[6] + setX;
 			setY = img.resizePosition[7] + setY;
 				
-			var obj = getSetXY(setX, setY, img.aspectRatio);
-			setX = obj.setX;
-			setY = obj.setY;
-			var bounds = [img.resizePosition[2], img.resizePosition[3], img.resizePosition[2] + setX, img.resizePosition[3] + setY];
+			// var obj = getSetXY(setX, setY, img.aspectRatio);
+			// setX = obj.setX;
+			// setY = obj.setY;
+			// var bounds = [img.resizePosition[2], img.resizePosition[3], img.resizePosition[2] + setX, img.resizePosition[3] + setY];
 		}
 	}
-
-	img.setBounds(bounds);
+	if(!oneDirection && img.aspectRatio!==0)	{
+		var obj = getSetXY(setX, setY, img.aspectRatio);
+		setX = obj.setX;
+		setY = obj.setY;
+	}
+	var bounds = [img.resizePosition[2], img.resizePosition[3], img.resizePosition[2] + setX, img.resizePosition[3] + setY];
+	
+	drawBounds(img, bounds);
 }
 
 function keyCutMove (event,img) {
@@ -391,17 +436,17 @@ function keyCutMove (event,img) {
 	}else if(keyCode == KEYDOWN && bounds[3] < img.imgBounds[3]){
 		bounds = [bounds[0], bounds[1]+1, bounds[2], bounds[3]+1];
 	}
-	img.setBounds(bounds);
+	drawBounds(img, bounds);
 }
 
 function  startDrag(img,bounds) {
+	img.dragKind = "startDrag";
 	img.haveCut = false;
 	img.$dragDiv.hide();
 	img.deleteCut();
 	img.setOpacity(opacityVal);
 
 	img.initCut(bounds);
-	img.dragKind = "startDrag";
 }
 function stopDrag (img) {
 	if(img.data){
@@ -447,15 +492,23 @@ function calculateRatio(img, bounds) {
 	bounds = [bounds[0], bounds[1], bounds[0] + width, bounds[1] + height];
 	return bounds;
 }
-function getSetXY (setX,setY,aspectRatio) {
+function getSetXY (setX,setY,aspectRatio,flag) {// flag 为 true 表示以小的为基准
 	var absX = Math.abs(setX);
 	var absY = Math.abs(setY);
 	if(aspectRatio !== 0){
 		var restX = absY * aspectRatio;
-		if(restX >= absX){
-			setX = getNumSymbol(setX) * restX;
+		if(!flag){
+			if(restX >= absX){
+				setX = getNumSymbol(setX) * restX;
+			}else{
+				setY = getNumSymbol(setY) * absX / aspectRatio;
+			}
 		}else{
-			setY = getNumSymbol(setY) * absX / aspectRatio;
+			if(restX < absX){
+				setX = getNumSymbol(setX) * restX;
+			}else{
+				setY = getNumSymbol(setY) * absX / aspectRatio;
+			}
 		}
 	}
 	return {
@@ -463,6 +516,35 @@ function getSetXY (setX,setY,aspectRatio) {
 		setY: setY
 	}
 }
+
+function drawBounds(img, bounds, falg){ //bounds 可以传随意两个点，如果第三个参数为true 表示传的是 左上，右下
+	if(!falg){
+		bounds = resetBounds(bounds);
+	}
+	for(var i in bounds){
+		bounds[i] = Math.round(bounds[i]);
+	}
+	bounds = img.checkBounds(bounds);
+	if(!bounds){
+		return;
+	}
+	img.haveCut = true;
+	img.bounds = bounds;
+	
+	var height = bounds[3] - bounds[1];
+	var width = bounds[2] - bounds[0];
+	img.$cut.css({
+		"left": img.bounds[0] ,
+		"top": img.bounds[1] ,
+		"width": Math.abs(width),
+		"height": Math.abs(height)
+	});
+	img.$cutImg.css({
+		"left": -img.bounds[0] ,
+		"top": -img.bounds[1] 
+	});
+}
+
 function createCut ($cutImg, img) {
 	var $cut =  $("\
 		<div class='cutDiv'>\
