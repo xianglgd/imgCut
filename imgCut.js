@@ -14,7 +14,7 @@ function imgCut (imgDom, config) {
 function ImgCut(imgDom, config) {
 	config = config || {};
 
-	this.aspectRatio = config.aspectRatio || 0;  // width : height
+	this.aspectRatio = parseFloat(config.aspectRatio) || 0;  // width : height
 
 	this.$img = $img = $(imgDom);
 	this.dragKind = "";// startDrag 最开始截图，cutDrag 拖拽 cut, resize 改变cut大小 
@@ -67,10 +67,11 @@ ImgCut.prototype.initCut = function(bounds) {
 	this.$cut.css("display","block");	
 };
 ImgCut.prototype.setRatio = function (val) {
+	var val = parseFloat( val );
 	if(!val && val !== 0){
 		return false;
 	}
-	this.aspectRatio = parseInt( val );
+	this.aspectRatio = val;
 	if(!this.haveCut){
 		return true;
 	}
