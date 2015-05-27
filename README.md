@@ -2,6 +2,12 @@
 setBounds([x1,y1,x2,y2]);
 //传入任意的两个点，必须是对角点，
 
+setOpacity(0-1);
+//设置透明度，
+
+setRatio(float);
+//设置宽高比
+
 getBounds();
 //得到 左上，右下的坐标
 
