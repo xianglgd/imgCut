@@ -1,7 +1,5 @@
 (function(window,$,undefined){
 
-var opacityVal = 0.6;
-var stopDragOpacity = 0;
 var KEYRIGHT = 39;
 var KEYTOP = 38;
 var KEYDOWN = 40;
@@ -14,36 +12,33 @@ function imgCut (imgDom, config) {
 function ImgCut(imgDom, config) {
 	var $imgDom = $(imgDom);
 	var me = this;
-	if($imgDom.width() != 0 && $imgDom.height() != 0){
+	afterLoad($imgDom, function() {
 		initImg(me, imgDom, config);
-	}else{
-		$imgDom.load(function(argument) {
-			initImg(me, imgDom, config);
-		});
-	}
+	},true);
 };
 
 ImgCut.prototype.setOpacity = function(val) {
-	this.opacityVal = val;
-	this.$wrap.css("opacity",val)
+	this.config.opacityVal = val;
+	drawOpacity(this, val);
 };
-ImgCut.prototype.deleteCut = function(val) {
-	this.$cut.css("display","none");
-	this.haveCut = false;
-	this.cutOnFocus = false;
-};
-ImgCut.prototype.initCut = function(bounds) {
-	this.haveCut = true;
-	drawBounds(this, bounds, true);
-	this.cutOnFocus = true;
-	this.$cut.css("display","block");	
+ImgCut.prototype.setImg = function(src) {
+	deleteCut(this);
+	this.$img.attr("src", src);
+	var me = this;
+	var newImg = new Image();
+	afterLoad($(newImg), function() {
+		for(var k = (new Date()).getTime(); (new Date()).getTime() - k < 1000;true ){}
+		initOptions(me, me.$img.get(0) , me.config);
+		initElementCss(me);
+	});
+	newImg.src = src;
 };
 ImgCut.prototype.setRatio = function (val) {
 	var val = parseFloat( val );
 	if(!val && val !== 0){
 		return false;
 	}
-	this.aspectRatio = val;
+	this.config.aspectRatio = val;
 	if(!this.haveCut){
 		return true;
 	}
@@ -61,7 +56,7 @@ ImgCut.prototype.setBounds = function(bounds) {//传入的为两个对角点，�
 		return;
 	}
 	bounds = resetBounds(bounds);	
-	if(this.aspectRatio!=0){
+	if(this.config.aspectRatio!=0){
 		bounds = calculateRatio(this, bounds);
 	}
 	
@@ -78,7 +73,7 @@ ImgCut.prototype.checkBounds = function(bounds) {
 	var dragKind = this.dragKind;
 	var basePosition = [];
 	var position = [];
-	if(this.aspectRatio!=0 && dragKind != "cutDrag"){
+	if(this.config.aspectRatio!=0 && dragKind != "cutDrag"){
 		if(dragKind == "startDrag"){ //找出基准点
 			basePosition = [this.dragPosition[0],this.dragPosition[1]];
 		}else if(dragKind == "resize"){
@@ -112,31 +107,31 @@ ImgCut.prototype.checkBounds = function(bounds) {
 	var height = position[1] - basePosition[1];
 
 	if(bounds[0] < 0){
-		if(this.aspectRatio!=0 && dragKind != "cutDrag"){
+		if(this.config.aspectRatio!=0 && dragKind != "cutDrag"){
 			width-= bounds[0];
 		}
 		bounds[0] = 0;
 	}
 	if(bounds[1] < 0){
-		if(this.aspectRatio!=0 && dragKind != "cutDrag"){
+		if(this.config.aspectRatio!=0 && dragKind != "cutDrag"){
 			height-= bounds[1];
 		}
 		bounds[1] = 0;
 	}
 	if(bounds[2] > this.imgBounds[2]){
-		if(this.aspectRatio!=0 && dragKind != "cutDrag"){
+		if(this.config.aspectRatio!=0 && dragKind != "cutDrag"){
 			width = width - bounds[2] + this.imgBounds[2];
 		}
 		bounds[2] = this.imgBounds[2];
 	}
 	if(bounds[3] > this.imgBounds[3]){
-		if(this.aspectRatio!=0 && dragKind != "cutDrag"){
+		if(this.config.aspectRatio!=0 && dragKind != "cutDrag"){
 			height = height - bounds[3] + this.imgBounds[3];
 		}
 		bounds[3] = this.imgBounds[3];
 	}
-	if(this.aspectRatio!=0 && dragKind != "cutDrag"){
-		var obj = getSetXY(width, height, this.aspectRatio, true);
+	if(this.config.aspectRatio!=0 && dragKind != "cutDrag"){
+		var obj = getSetXY(width, height, this.config.aspectRatio, true);
 		return resetBounds(basePosition.concat(basePosition[0] + obj.setX, basePosition[1] + obj.setY));
 	}else{
 		return bounds;
@@ -144,51 +139,92 @@ ImgCut.prototype.checkBounds = function(bounds) {
 };
 
 function initImg (imgObj, imgDom, config) {
-	config = config || {};
 
-	imgObj.aspectRatio = parseFloat(config.aspectRatio) || 0;  // width : height
+	initConfig(imgObj, imgDom, config);
 
-	imgObj.$img = $img = $(imgDom);
-	imgObj.dragKind = "";// startDrag 最开始截图，cutDrag 拖拽 cut, resize 改变cut大小 
-	var position = $img.offset();
-	imgObj.imgBounds = [position.left, position.top, $img.width(), $img.height()];
-	imgObj.opacityVal = config.opacityVal || opacityVal;
-	imgObj.startDrag = false;
-	imgObj.dragPosition = [0,0];
-
-	imgObj.bounds = config.bounds || [0,0,0,0]; //[x1, y1, x2, y2] 左上，右下 坐标
-	imgObj.haveCut = false;
-	imgObj.cutOnFocus = false;
-	imgObj.$cutImg = $cutImg = $("<img src='"+ $img.attr("src") +"' class='cutImg'>"); 
-	$cutImg.css({
-		"width": imgObj.imgBounds[2],
-		"height": imgObj.imgBounds[3]
-	});
-
-	imgObj.$cut = $cut = createCut($cutImg, imgObj);
-	imgObj.cutDrag = false;
-	imgObj.cutMousePosition = [0,0,0,0,0,0];//拖拽框时的起始鼠标坐标点 x,y 以及起始框所在位置左上角的x,y.和其对立点的x,y
-
-	imgObj.$dragDiv;
-	imgObj.resize = false;
-	imgObj.resizePosition = [0,0,0,0,0,0,0,0];//拖拽框时的起始鼠标坐标点 x,y. 以及起始框所在位置基点x1,y1 和其对立点的x2,y2.以及 width(x2-x1)，height(y2-y1)
-	imgObj.resizeKind = undefined;
-
-	imgObj.$wrap = $("<div class='imgCutWrapDiv'></div>").append($cut);
-
-	imgObj.$wrap.css({
-		"left": imgObj.imgBounds[0],
-		"top": imgObj.imgBounds[1],
-		"width": imgObj.imgBounds[2],
-		"height": imgObj.imgBounds[3]
-	});
+	initOptions(imgObj, imgDom, config);
 	
+	initElement(imgObj, imgDom, config);
+
+	initElementCss(imgObj);
+
 	$("body").append(imgObj.$wrap);
 
 	
 	bindEvent(imgObj);
 }
 
+function initConfig(imgObj, imgDom, config){
+	var conf = $.extend({},defaultConfig);
+	if(typeof config === 'object'){
+		conf = $.extend(conf,config);
+	}
+	imgObj.config = conf;
+}
+
+function initOptions(imgObj, imgDom, config){
+
+	if(!imgObj.$img){
+		var $img = imgObj.$img  = $(imgDom);
+	}else{
+		var $img = imgObj.$img;
+	}
+	imgObj.dragKind = "";// startDrag 最开始截图，cutDrag 拖拽 cut, resize 改变cut大小 
+	var position = $img.offset();
+	imgObj.imgBounds = [position.left, position.top, $img.width(), $img.height()];
+	window.ssss= $img;
+	imgObj.dragPosition = [0,0];
+
+	imgObj.bounds = [0,0,0,0]; //[x1, y1, x2, y2] 左上，右下 坐标
+	imgObj.haveCut = false;
+	imgObj.cutOnFocus = false;
+
+	imgObj.cutMousePosition = [0,0,0,0,0,0];//拖拽框时的起始鼠标坐标点 x,y 以及起始框所在位置左上角的x,y.和其对立点的x,y
+
+	imgObj.resizePosition = [0,0,0,0,0,0,0,0];//拖拽框时的起始鼠标坐标点 x,y. 以及起始框所在位置基点x1,y1 和其对立点的x2,y2.以及 width(x2-x1)，height(y2-y1)
+	imgObj.resizeKind = undefined;
+}
+
+function initElement(imgObj, imgDom, config){
+
+	var $img = imgObj.$img ;
+	
+	var $cutImg = imgObj.$cutImg = $("<img class='cutImg'>"); 
+
+	var $cut = imgObj.$cut = createCut($cutImg, imgObj);
+	imgObj.$dragDiv;
+
+	imgObj.$wrap = $("<div class='imgCutWrapDiv'></div>").append($cut);
+}
+
+function initElementCss (imgObj) {
+	var $img = imgObj.$img ;
+	var $cutImg = imgObj.$cutImg
+	$cutImg.attr("src",$img.attr("src"))
+	$cutImg.css({
+		"width": imgObj.imgBounds[2],
+		"height": imgObj.imgBounds[3]
+	});
+	imgObj.$wrap.css({
+		"left": imgObj.imgBounds[0],
+		"top": imgObj.imgBounds[1],
+		"width": imgObj.imgBounds[2],
+		"height": imgObj.imgBounds[3]
+	});
+}
+
+function deleteCut (img) {
+	img.$cut.css("display","none");
+	img.haveCut = false;
+	img.cutOnFocus = false;
+	drawOpacity(img, img.config.stopDragOpacity);
+};
+function initCut (img, bounds) {
+	img.haveCut = true;
+	drawBounds(img, bounds, true);
+	img.cutOnFocus = true;
+	img.$cut.css("display","block");	
+};
 function bindEvent (img) {
 	wrapBindEvent(img.$wrap,img);
 
@@ -325,7 +361,7 @@ function startInitCut(event, img){
 	var setX = event.pageX - img.imgBounds[0] - img.dragPosition[0];
 	var setY = event.pageY - img.imgBounds[1] - img.dragPosition[1];
 	
-	var obj = getSetXY(setX,setY,img.aspectRatio);
+	var obj = getSetXY(setX,setY,img.config.aspectRatio);
 	setX = obj.setX;
 	setY = obj.setY;
 
@@ -369,12 +405,12 @@ function startResizeCut(event, img){
 	var oneDirection = true;
 	switch(img.resizeKind){
 		case "l" :{
-			if(img.aspectRatio!=0){
+			if(img.config.aspectRatio!=0){
 				if(setX > width){
 					setX = setX - width;
-					setY = -setX / img.aspectRatio;
+					setY = -setX / img.config.aspectRatio;
 				}else{
-					setY = ( setX / img.aspectRatio);
+					setY = ( setX / img.config.aspectRatio);
 					setX = img.resizePosition[6] + setX;
 					setY = img.resizePosition[7] + setY;	
 				}
@@ -385,12 +421,12 @@ function startResizeCut(event, img){
 			break;
 		};
 		case "r" :{ // 只发生横向X变化		
-			if(img.aspectRatio!=0){
+			if(img.config.aspectRatio!=0){
 				if(setX < -width){
 					setX = setX + width;
-					setY = -setX / img.aspectRatio;
+					setY = -setX / img.config.aspectRatio;
 				}else{
-					setY = ( setX / img.aspectRatio);
+					setY = ( setX / img.config.aspectRatio);
 					setX = img.resizePosition[6] + setX;
 					setY = img.resizePosition[7] + setY;	
 				}
@@ -402,12 +438,12 @@ function startResizeCut(event, img){
 			break;
 		};
 		case "t" :{
-			if(img.aspectRatio!=0){
+			if(img.config.aspectRatio!=0){
 				if(setY > height){
 					setY = setY - height;
-					setX = -setY * img.aspectRatio;
+					setX = -setY * img.config.aspectRatio;
 				}else{
-					setX = ( setY * img.aspectRatio);
+					setX = ( setY * img.config.aspectRatio);
 					setX = img.resizePosition[6] + setX;
 					setY = img.resizePosition[7] + setY;	
 				}
@@ -418,12 +454,12 @@ function startResizeCut(event, img){
 			break;
 		};
 		case "b" :{ // 只发生纵向Y变化		
-			if(img.aspectRatio!=0){
+			if(img.config.aspectRatio!=0){
 				if(setY < -height){
 					setY = setY + height;
-					setX = -setY * img.aspectRatio;
+					setX = -setY * img.config.aspectRatio;
 				}else{
-					setX = ( setY * img.aspectRatio);
+					setX = ( setY * img.config.aspectRatio);
 					setX = img.resizePosition[6] + setX;
 					setY = img.resizePosition[7] + setY;	
 				}
@@ -445,8 +481,8 @@ function startResizeCut(event, img){
 			// var bounds = [img.resizePosition[2], img.resizePosition[3], img.resizePosition[2] + setX, img.resizePosition[3] + setY];
 		}
 	}
-	if(!oneDirection && img.aspectRatio!=0)	{
-		var obj = getSetXY(setX, setY, img.aspectRatio);
+	if(!oneDirection && img.config.aspectRatio!=0)	{
+		var obj = getSetXY(setX, setY, img.config.aspectRatio);
 		setX = obj.setX;
 		setY = obj.setY;
 	}
@@ -475,10 +511,10 @@ function  startDrag(img,bounds) {
 	img.dragKind = "startDrag";
 	img.haveCut = false;
 	img.$dragDiv.hide();
-	img.deleteCut();
-	img.setOpacity(opacityVal);
+	deleteCut(img);
+	drawOpacity(img, img.config.opacityVal);
 
-	img.initCut(bounds);
+	initCut(img, bounds);
 }
 function stopDrag (img) {
 	if(img.data){
@@ -488,8 +524,8 @@ function stopDrag (img) {
 
 	if($cut.height() == 0 && $cut.width() == 0){
 		img.haveCut = false;
-		img.deleteCut();
-		img.setOpacity(stopDragOpacity);
+		deleteCut(img);
+		drawOpacity(img, img.config.stopDragOpacity);		
 	}
 	img.$dragDiv.show();
 	img.dragKind = "";
@@ -513,14 +549,14 @@ function  resetBounds(bounds) { //把任意两个对角点的坐标 转换为 �
 }
 
 function calculateRatio(img, bounds) {
-	if(img.aspectRatio == 0){
+	if(img.config.aspectRatio == 0){
 		return bounds;
 	}
 	var width = bounds[2] - bounds[0];
 	var height = bounds[3] - bounds[1];
-	var resetH = height * img.aspectRatio;
+	var resetH = height * img.config.aspectRatio;
 	if(width > resetH){
-		height = width / img.aspectRatio;
+		height = width / img.config.aspectRatio;
 	}else{
 		width = resetH;
 	}
@@ -560,7 +596,11 @@ function drawBounds(img, bounds, falg){ //bounds 可以传随意两个点，如�
 		bounds[i] = Math.round(bounds[i]);
 	}
 	bounds = img.checkBounds(bounds);
-	if(!bounds){
+	if(!bounds || 
+		(img.config.beforeChange && 
+		 img.config.beforeChange($.extend([],img.bounds), $.extend([],bounds) ) === true
+		 )
+	   ){
 		return;
 	}
 	img.haveCut = true;
@@ -578,6 +618,21 @@ function drawBounds(img, bounds, falg){ //bounds 可以传随意两个点，如�
 		"left": -img.bounds[0] ,
 		"top": -img.bounds[1] 
 	});
+	img.config.afterChange && img.config.afterChange($.extend([],img.bounds));
+}
+
+function drawOpacity (img , val) {
+	img.$wrap.css("opacity",val);
+}
+
+function afterLoad($img, func, flag){ //flag 为true时，只执行一次
+	if($img.width() != 0 && $img.height() != 0){
+		func();
+	}else if(flag === true){
+		$img.one("load",func);
+	}else{
+		$img.load(func);
+	}
 }
 
 function createCut ($cutImg, img) {
@@ -608,6 +663,14 @@ function getNumSymbol(num) {
 		return 1;
 	}
 	return -1;
+}
+
+var defaultConfig = {
+	aspectRatio: 0,
+	beforeChange: null, // 返回true取消当前移动  两个参数 nowbounds ,changebounds
+	afterChange: null,
+	opacityVal: 0.6,
+	stopDragOpacity: 0
 }
 
 window.imgCut = imgCut;
