@@ -17,7 +17,6 @@ function ImgCut(imgDom, config) {
 	if($imgDom.width() != 0){
 		initImg(me, imgDom, config);
 	}else{
-		console.log(1);
 		$imgDom.load(function(argument) {
 			initImg(me, imgDom, config);
 		});
@@ -248,9 +247,9 @@ function cutBindEvent($cut, obj) {
 
 function wrapMouseDown(event) {
 	var img = event.data;
-	img.dragPosition = [event.offsetX, event.offsetY];
+	img.dragPosition = [event.pageX - img.imgBounds[0], event.pageY - img.imgBounds[1]];
 	//img.dragKind = "startDrag";
-	startDrag(img,[event.offsetX, event.offsetY, event.offsetX, event.offsetY]);
+	startDrag(img,img.dragPosition.concat(img.dragPosition));
 	$(window).on("mousemove", img, windowMouseMove);
 	event.stopPropagation();
 }
@@ -261,7 +260,7 @@ function cutMouseDown(event) {
 	img.dragKind = "cutDrag";
 	img.cutOnFocus = true;
 	var bounds = img.getBounds();
-	img.cutMousePosition = [event.clientX, event.clientY, bounds[0], bounds[1], bounds[2] - bounds[0], bounds[3] - bounds[1]];
+	img.cutMousePosition = [event.pageX, event.pageY, bounds[0], bounds[1], bounds[2] - bounds[0], bounds[3] - bounds[1]];
 	$(window).on("mousemove", img, windowMouseMove);
 	event.stopPropagation();
 }
@@ -273,7 +272,7 @@ function dragMouseDown (event) {
 	if(!img.resizeKind){
 		return;
 	}
-	img.resizePosition = [event.clientX, event.clientY];
+	img.resizePosition = [event.pageX, event.pageY];
 	var bounds = img.getBounds();
 	switch(img.resizeKind){
 		case "l" :{//以右下为基点
@@ -317,8 +316,8 @@ function dragMouseDown (event) {
 }
 
 function startInitCut(event, img){
-	var setX = event.clientX - img.imgBounds[0] - img.dragPosition[0];
-	var setY = event.clientY - img.imgBounds[1] - img.dragPosition[1];
+	var setX = event.pageX - img.imgBounds[0] - img.dragPosition[0];
+	var setY = event.pageY - img.imgBounds[1] - img.dragPosition[1];
 	
 	var obj = getSetXY(setX,setY,img.aspectRatio);
 	setX = obj.setX;
@@ -330,8 +329,8 @@ function startInitCut(event, img){
 }
 
 function startDragCut(event, img){
-	var setX = event.clientX - img.cutMousePosition[0];
-	var setY = event.clientY - img.cutMousePosition[1];
+	var setX = event.pageX - img.cutMousePosition[0];
+	var setY = event.pageY - img.cutMousePosition[1];
 	var width = img.cutMousePosition[4];
 	var height = img.cutMousePosition[5];
 	var pointlt = [img.cutMousePosition[2]+setX, img.cutMousePosition[3]+setY];
@@ -357,8 +356,8 @@ function startDragCut(event, img){
 }
 
 function startResizeCut(event, img){
-	var setX = event.clientX - img.resizePosition[0];
-	var setY = event.clientY - img.resizePosition[1];
+	var setX = event.pageX - img.resizePosition[0];
+	var setY = event.pageY - img.resizePosition[1];
 	var width = Math.abs(img.resizePosition[6]);
 	var height = Math.abs(img.resizePosition[7]);
 	var oneDirection = true;
