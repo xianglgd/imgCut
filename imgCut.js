@@ -27,7 +27,6 @@ ImgCut.prototype.setImg = function(src) {
 	var me = this;
 	var newImg = new Image();
 	afterLoad($(newImg), function() {
-		for(var k = (new Date()).getTime(); (new Date()).getTime() - k < 1000;true ){}
 		initOptions(me, me.$img.get(0) , me.config);
 		initElementCss(me);
 	});
