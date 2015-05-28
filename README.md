@@ -17,6 +17,8 @@ setImg(src);
 checkBounds(bounds)
 //传入一个 bounds ，得到符合规则的 bounds ,[x1,y1,x2,y2] 必须为 左上，右下。
 
+
+
 defaultConfig：
 
 options：
@@ -26,6 +28,7 @@ aspectRatio： 0 ， 宽高比，为0表示随意 取值为 0以上
 opacityVal： 0.6，拖拽时的透明度
 
 stopDragOpacity： 停止拖拽时的透明度
+
 
 functions：
 
