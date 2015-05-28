@@ -14,7 +14,7 @@ function imgCut (imgDom, config) {
 function ImgCut(imgDom, config) {
 	var $imgDom = $(imgDom);
 	var me = this;
-	if($imgDom.width() != 0){
+	if($imgDom.width() != 0 && $imgDom.height() != 0){
 		initImg(me, imgDom, config);
 	}else{
 		$imgDom.load(function(argument) {
@@ -160,6 +160,11 @@ function initImg (imgObj, imgDom, config) {
 	imgObj.haveCut = false;
 	imgObj.cutOnFocus = false;
 	imgObj.$cutImg = $cutImg = $("<img src='"+ $img.attr("src") +"' class='cutImg'>"); 
+	$cutImg.css({
+		"width": imgObj.imgBounds[2],
+		"height": imgObj.imgBounds[3]
+	});
+
 	imgObj.$cut = $cut = createCut($cutImg, imgObj);
 	imgObj.cutDrag = false;
 	imgObj.cutMousePosition = [0,0,0,0,0,0];//拖拽框时的起始鼠标坐标点 x,y 以及起始框所在位置左上角的x,y.和其对立点的x,y
@@ -170,6 +175,7 @@ function initImg (imgObj, imgDom, config) {
 	imgObj.resizeKind = undefined;
 
 	imgObj.$wrap = $("<div class='imgCutWrapDiv'></div>").append($cut);
+
 	imgObj.$wrap.css({
 		"left": imgObj.imgBounds[0],
 		"top": imgObj.imgBounds[1],
