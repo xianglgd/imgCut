@@ -12,43 +12,16 @@ function imgCut (imgDom, config) {
 }
 
 function ImgCut(imgDom, config) {
-	config = config || {};
-
-	this.aspectRatio = parseFloat(config.aspectRatio) || 0;  // width : height
-
-	this.$img = $img = $(imgDom);
-	this.dragKind = "";// startDrag 最开始截图，cutDrag 拖拽 cut, resize 改变cut大小 
-	var position = $img.offset();
-	this.imgBounds = [position.left, position.top, $img.width(), $img.height()];
-	this.opacityVal = config.opacityVal || opacityVal;
-	this.startDrag = false;
-	this.dragPosition = [0,0];
-
-	this.bounds = config.bounds || [0,0,0,0]; //[x1, y1, x2, y2] 左上，右下 坐标
-	this.haveCut = false;
-	this.cutOnFocus = false;
-	this.$cutImg = $cutImg = $("<img src='"+ $img.attr("src") +"' class='cutImg'>"); 
-	this.$cut = $cut = createCut($cutImg, this);
-	this.cutDrag = false;
-	this.cutMousePosition = [0,0,0,0,0,0];//拖拽框时的起始鼠标坐标点 x,y 以及起始框所在位置左上角的x,y.和其对立点的x,y
-
-	this.$dragDiv;
-	this.resize = false;
-	this.resizePosition = [0,0,0,0,0,0,0,0];//拖拽框时的起始鼠标坐标点 x,y. 以及起始框所在位置基点x1,y1 和其对立点的x2,y2.以及 width(x2-x1)，height(y2-y1)
-	this.resizeKind = undefined;
-
-	this.$wrap = $("<div class='imgCutWrapDiv'></div>").append($cut);
-	this.$wrap.css({
-		"left": this.imgBounds[0],
-		"top": this.imgBounds[1],
-		"width": this.imgBounds[2],
-		"height": this.imgBounds[3]
-	});
-	
-	$("body").append(this.$wrap);
-
-	
-	bindEvent(this);
+	var $imgDom = $(imgDom);
+	var me = this;
+	if($imgDom.width() != 0){
+		initImg(me, imgDom, config);
+	}else{
+		console.log(1);
+		$imgDom.load(function(argument) {
+			initImg(me, imgDom, config);
+		});
+	}
 };
 
 ImgCut.prototype.setOpacity = function(val) {
@@ -170,6 +143,46 @@ ImgCut.prototype.checkBounds = function(bounds) {
 		return bounds;
 	}
 };
+
+function initImg (imgObj, imgDom, config) {
+	config = config || {};
+
+	imgObj.aspectRatio = parseFloat(config.aspectRatio) || 0;  // width : height
+
+	imgObj.$img = $img = $(imgDom);
+	imgObj.dragKind = "";// startDrag 最开始截图，cutDrag 拖拽 cut, resize 改变cut大小 
+	var position = $img.offset();
+	imgObj.imgBounds = [position.left, position.top, $img.width(), $img.height()];
+	imgObj.opacityVal = config.opacityVal || opacityVal;
+	imgObj.startDrag = false;
+	imgObj.dragPosition = [0,0];
+
+	imgObj.bounds = config.bounds || [0,0,0,0]; //[x1, y1, x2, y2] 左上，右下 坐标
+	imgObj.haveCut = false;
+	imgObj.cutOnFocus = false;
+	imgObj.$cutImg = $cutImg = $("<img src='"+ $img.attr("src") +"' class='cutImg'>"); 
+	imgObj.$cut = $cut = createCut($cutImg, imgObj);
+	imgObj.cutDrag = false;
+	imgObj.cutMousePosition = [0,0,0,0,0,0];//拖拽框时的起始鼠标坐标点 x,y 以及起始框所在位置左上角的x,y.和其对立点的x,y
+
+	imgObj.$dragDiv;
+	imgObj.resize = false;
+	imgObj.resizePosition = [0,0,0,0,0,0,0,0];//拖拽框时的起始鼠标坐标点 x,y. 以及起始框所在位置基点x1,y1 和其对立点的x2,y2.以及 width(x2-x1)，height(y2-y1)
+	imgObj.resizeKind = undefined;
+
+	imgObj.$wrap = $("<div class='imgCutWrapDiv'></div>").append($cut);
+	imgObj.$wrap.css({
+		"left": imgObj.imgBounds[0],
+		"top": imgObj.imgBounds[1],
+		"width": imgObj.imgBounds[2],
+		"height": imgObj.imgBounds[3]
+	});
+	
+	$("body").append(imgObj.$wrap);
+
+	
+	bindEvent(imgObj);
+}
 
 function bindEvent (img) {
 	wrapBindEvent(img.$wrap,img);
