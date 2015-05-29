@@ -27,9 +27,11 @@ opacityVal： 0.6，拖拽时的透明度
 
 stopDragOpacity： 停止拖拽时的透明度
 
-beforeChange：null ，自定义方法，参数为 nowbounds ,changebounds。 如果返回 true 则该次变化取消.
+beforeChange：null ，自定义方法，改变bounds之前执行，参数为 nowbounds ,changebounds。 如果返回 true 则该次变化取消.
 
-afterChange：null , 自定义方法，参数为 nowBounds .
+afterChange：null , 自定义方法，改变bounds后执行，参数为 nowBounds .
+
+afterLoad：null , 自定义方法，加载完图片后执行，参数为 imgbounds ， 图片左上角距离页面的 top，left。以及图片的宽度，高度
 
 
 # imgCut
