@@ -14,6 +14,7 @@ function ImgCut(imgDom, config) {
 	var me = this;
 	afterLoad($imgDom, function() {
 		initImg(me, imgDom, config);
+		me.afterLoad && me.afterLoad(me.imgBounds);
 	});
 };
 
@@ -29,6 +30,7 @@ ImgCut.prototype.setImg = function(src) {
 	afterLoad($(newImg), function() {
 		initOptions(me, me.$img.get(0) , me.config);
 		initElementCss(me);
+		me.afterLoad && me.afterLoad(me.imgBounds);
 	});
 	newImg.src = src;
 };
@@ -681,6 +683,7 @@ function getNumSymbol(num) {
 
 var defaultConfig = {
 	aspectRatio: 0,
+	afterLoad: null, //加载完图片时执行的回调
 	beforeChange: null, // 返回true取消当前移动  两个参数 nowbounds ,changebounds
 	afterChange: null,
 	opacityVal: 0.6,
