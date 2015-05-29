@@ -14,7 +14,7 @@ function ImgCut(imgDom, config) {
 	var me = this;
 	afterLoad($imgDom, function() {
 		initImg(me, imgDom, config);
-	},true);
+	});
 };
 
 ImgCut.prototype.setOpacity = function(val) {
@@ -67,6 +67,22 @@ ImgCut.prototype.getBounds = function() {
 		return this.bounds;
 	}
 	return false;
+};
+ImgCut.prototype.destroy = function() {
+	this.$img.off();
+	this.$cutImg.off();
+	this.$cut.off();
+	this.$dragDiv.off();
+	var $window = $(window);
+	$window.off("mouseup", windowMouseUp);
+	$window.off("mousedown", windowMouseDown);
+	$window.off("keydown", windowKeyDown);
+	$window.off("mousemove", windowMouseMove);
+	this.$wrap.off().remove();
+	for(var i in this){
+		delete this[i];
+	}
+	return this;
 };
 ImgCut.prototype.checkBounds = function(bounds) {
 	var dragKind = this.dragKind;
@@ -276,6 +292,7 @@ function windowKeyDown (event) {
 		return;
 	};
 	keyCutMove(event,img);
+	event.preventDefault();
 }
 
 function wrapBindEvent($wrap, obj) {
@@ -624,13 +641,11 @@ function drawOpacity (img , val) {
 	img.$wrap.css("opacity",val);
 }
 
-function afterLoad($img, func, flag){ //flag 为true时，只执行一次
+function afterLoad($img, func){
 	if($img.width() != 0 && $img.height() != 0){
 		func();
-	}else if(flag === true){
-		$img.one("load",func);
 	}else{
-		$img.load(func);
+		$img.one("load",func);
 	}
 }
 
