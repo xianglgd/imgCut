@@ -14,7 +14,7 @@ function ImgCut(imgDom, config) {
 	var me = this;
 	afterLoad($imgDom, function() {
 		initImg(me, imgDom, config);
-		me.afterLoad && me.afterLoad(me.imgBounds);
+		me.config.afterLoad && me.config.afterLoad(me.imgBounds);
 	});
 };
 
@@ -30,7 +30,7 @@ ImgCut.prototype.setImg = function(src) {
 	afterLoad($(newImg), function() {
 		initOptions(me, me.$img.get(0) , me.config);
 		initElementCss(me);
-		me.afterLoad && me.afterLoad(me.imgBounds);
+		me.config.afterLoad && me.config.afterLoad(me.imgBounds);
 	});
 	newImg.src = src;
 };
