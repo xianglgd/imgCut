@@ -14,6 +14,9 @@ getBounds();
 setImg(src);
 //设置新的图片
 
+destroy();
+//销毁函数，同时销毁对象，由于不能直接将this知悉null，所以删除所有this属性。
+
 checkBounds(bounds)
 //传入一个 bounds ，得到符合规则的 bounds ,[x1,y1,x2,y2] 必须为 左上，右下。
 
