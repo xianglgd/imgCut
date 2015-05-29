@@ -614,8 +614,8 @@ function drawBounds(img, bounds, falg){ //bounds 可以传随意两个点，如�
 		"height": Math.abs(height)
 	});
 	img.$cutImg.css({
-		"left": -img.bounds[0] ,
-		"top": -img.bounds[1] 
+		"left": -img.bounds[0] -1  ,
+		"top": -img.bounds[1] - 1
 	});
 	img.config.afterChange && img.config.afterChange($.extend([],img.bounds));
 }
