@@ -11,11 +11,8 @@ function imgCut (imgDom, config) {
 
 function ImgCut(imgDom, config) {
 	var $imgDom = $(imgDom);
-	var me = this;
-	afterLoad($imgDom, function() {
-		initImg(me, imgDom, config);
-		me.config.afterLoad && me.config.afterLoad(me.imgBounds);
-	});
+	initImg(this, imgDom, config);
+	this.config.afterLoad && this.config.afterLoad(this.imgBounds);
 };
 
 ImgCut.prototype.setOpacity = function(val) {
@@ -24,15 +21,29 @@ ImgCut.prototype.setOpacity = function(val) {
 };
 ImgCut.prototype.setImg = function(src) {
 	deleteCut(this);
-	this.$img.attr("src", src);
 	var me = this;
-	var newImg = new Image();
-	afterLoad($(newImg), function() {
+	afterLoad(this.$img, function() {
 		initOptions(me, me.$img.get(0) , me.config);
 		initElementCss(me);
 		me.config.afterLoad && me.config.afterLoad(me.imgBounds);
 	});
-	newImg.src = src;
+	this.$img.attr("src", src);
+	
+};
+ImgCut.prototype.resetPosition = function() {
+	var $img = this.$img
+	var position = $img.offset();
+	this.imgBounds = [position.left, position.top, $img.width(), $img.height()];
+	this.$cutImg.css({
+		"width": this.imgBounds[2],
+		"height": this.imgBounds[3]
+	});
+	this.$wrap.css({
+		"left": this.imgBounds[0],
+		"top": this.imgBounds[1],
+		"width": this.imgBounds[2],
+		"height": this.imgBounds[3]
+	});
 };
 ImgCut.prototype.setRatio = function (val) {
 	var val = parseFloat( val );
@@ -644,11 +655,7 @@ function drawOpacity (img , val) {
 }
 
 function afterLoad($img, func){
-	if($img.width() != 0 && $img.height() != 0){
-		func();
-	}else{
-		$img.one("load",func);
-	}
+	$img.one("load",func);
 }
 
 function createCut ($cutImg, img) {
