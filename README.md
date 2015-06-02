@@ -5,6 +5,9 @@ setBounds([x1,y1,x2,y2]);
 setOpacity(0-1);
 //设置透明度，
 
+resetPosition();
+//重新定位遮罩
+
 setRatio(float);
 //设置宽高比
 
