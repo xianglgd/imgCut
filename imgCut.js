@@ -5,7 +5,23 @@ var KEYTOP = 38;
 var KEYDOWN = 40;
 var KEYLEFT = 37;
 
+var canUse3d = undefined;
+var prefix = "";
+
 function imgCut (imgDom, config) {
+	if(config.use3d !== false && canUse3d === undefined){
+		var style = imgDom.style;
+		canUse3d = true;
+		if("transform" in style){
+			prefix = "transform";
+		}else if("MozTransform" in style){
+			prefix = "MozTransform";
+		}else if("webkitTransform" in style){
+			prefix = "webkitTransform";
+		}else{
+			canUse3d = false;
+		}
+	}
 	return new ImgCut(imgDom,config);
 }
 
@@ -86,11 +102,11 @@ ImgCut.prototype.destroy = function() {
 	this.$cutImg.off();
 	this.$cut.off();
 	this.$dragDiv.off();
-	var $window = $(window);
-	$window.off("mouseup", windowMouseUp);
-	$window.off("mousedown", windowMouseDown);
-	$window.off("keydown", windowKeyDown);
-	$window.off("mousemove", windowMouseMove);
+	var $body = $(window.document.body);
+	$body.off("mouseup", bodyMouseUp);
+	$body.off("mousedown", bodyMouseDown);
+	$body.off("keydown", bodyKeyDown);
+	$body.off("mousemove", bodyMouseMove);
 	this.$wrap.off().remove();
 	for(var i in this){
 		delete this[i];
@@ -200,7 +216,6 @@ function initOptions(imgObj, imgDom, config){
 	imgObj.dragKind = "";// startDrag 最开始截图，cutDrag 拖拽 cut, resize 改变cut大小 
 	var position = $img.offset();
 	imgObj.imgBounds = [position.left, position.top, $img.width(), $img.height()];
-	window.ssss= $img;
 	imgObj.dragPosition = [0,0];
 
 	imgObj.bounds = [0,0,0,0]; //[x1, y1, x2, y2] 左上，右下 坐标
@@ -227,8 +242,10 @@ function initElement(imgObj, imgDom, config){
 
 function initElementCss (imgObj) {
 	var $img = imgObj.$img ;
-	var $cutImg = imgObj.$cutImg
-	$cutImg.attr("src",$img.attr("src"))
+	var $cutImg = imgObj.$cutImg;
+	imgObj.$wrap.hide();
+	$cutImg.attr("src",$img.attr("src"));
+	drawOpacity(imgObj, imgObj.config.stopDragOpacity);
 	$cutImg.css({
 		"width": imgObj.imgBounds[2],
 		"height": imgObj.imgBounds[3]
@@ -239,6 +256,7 @@ function initElementCss (imgObj) {
 		"width": imgObj.imgBounds[2],
 		"height": imgObj.imgBounds[3]
 	});
+	imgObj.$wrap.show();
 }
 
 function deleteCut (img) {
@@ -258,28 +276,28 @@ function bindEvent (img) {
 
 	cutBindEvent(img.$cut,img);
 
-	windowBindEvent($(window), img);
+	bodyBindEvent($(window.document.body), img);
 }
 
-function windowBindEvent ($window, img) {
-	$window.on("mouseup", img, windowMouseUp);
-	$window.on("mousedown", img, windowMouseDown);
-	$window.on("keydown", img, windowKeyDown);
+function bodyBindEvent ($body, img) {
+	$body.on("mouseup", img, bodyMouseUp);
+	$body.on("mousedown", img, bodyMouseDown);
+	$body.on("keydown", img, bodyKeyDown);
 }
 
-function windowMouseUp (event) {
+function bodyMouseUp (event) {
 	var img = event.data;
 	stopDrag(img);
 	img.dragKind = "";
-	$(window).off("mousemove", windowMouseMove);
+	$(window.document.body).off("mousemove", bodyMouseMove);
 }
 
-function windowMouseDown(event) {
+function bodyMouseDown(event) {
 	var img = event.data;
 	img.cutOnFocus = false;
 }
 
-function windowMouseMove (event) {
+function bodyMouseMove (event) {
 	var img = event.data;
 	event.preventDefault();
 	if(!img.dragKind){
@@ -299,7 +317,7 @@ function windowMouseMove (event) {
 	}
 }
 
-function windowKeyDown (event) {
+function bodyKeyDown (event) {
 	var img = event.data;
 	if (!img.cutOnFocus) {
 		return;
@@ -321,7 +339,7 @@ function wrapMouseDown(event) {
 	img.dragPosition = [event.pageX - img.imgBounds[0], event.pageY - img.imgBounds[1]];
 	//img.dragKind = "startDrag";
 	startDrag(img,img.dragPosition.concat(img.dragPosition));
-	$(window).on("mousemove", img, windowMouseMove);
+	$(window.document.body).on("mousemove", img, bodyMouseMove);
 	event.stopPropagation();
 }
 
@@ -332,7 +350,7 @@ function cutMouseDown(event) {
 	img.cutOnFocus = true;
 	var bounds = img.getBounds();
 	img.cutMousePosition = [event.pageX, event.pageY, bounds[0], bounds[1], bounds[2] - bounds[0], bounds[3] - bounds[1]];
-	$(window).on("mousemove", img, windowMouseMove);
+	$(window.document.body).on("mousemove", img, bodyMouseMove);
 	event.stopPropagation();
 }
 
@@ -382,7 +400,7 @@ function dragMouseDown (event) {
 	var width = img.resizePosition[4] - img.resizePosition[2];
 	var height = img.resizePosition[5] - img.resizePosition[3];
 	img.resizePosition = img.resizePosition.concat([width,height]);
-	$(window).on("mousemove", img, windowMouseMove);
+	$(window.document.body).on("mousemove", img, bodyMouseMove);
 	event.stopPropagation();
 }
 
@@ -550,8 +568,8 @@ function stopDrag (img) {
 		img = img.data;
 	}
 	var $cut = img.$cut;
-
-	if($cut.height() == 0 && $cut.width() == 0){
+	var bounds = img.getBounds();
+	if((bounds[2] - bounds[0]) == 0 && (bounds[3] - bounds[1]) == 0){
 		img.haveCut = false;
 		deleteCut(img);
 		drawOpacity(img, img.config.stopDragOpacity);		
@@ -637,16 +655,28 @@ function drawBounds(img, bounds, falg){ //bounds 可以传随意两个点，如�
 	
 	var height = bounds[3] - bounds[1];
 	var width = bounds[2] - bounds[0];
-	img.$cut.css({
-		"left": img.bounds[0] ,
-		"top": img.bounds[1] ,
-		"width": Math.abs(width),
-		"height": Math.abs(height)
-	});
-	img.$cutImg.css({
-		"left": -img.bounds[0] -1  ,
-		"top": -img.bounds[1] - 1
-	});
+	if(img.config.use3d !== false && canUse3d && prefix && prefix.length >0){
+		var cssObj = {};
+		cssObj[prefix] = "translate3d("+img.bounds[0]+"px,"+img.bounds[1]+"px,0)";
+		cssObj["width"] = Math.abs(width);
+		cssObj["height"] = Math.abs(height);
+		img.$cut.css(cssObj);
+
+		cssObj = {};
+		cssObj[prefix] = "translate3d("+(-img.bounds[0] -1)+"px,"+(-img.bounds[1] - 1)+"px,0)";
+		img.$cutImg.css(cssObj);
+	}else{
+		img.$cut.css({
+			"left": img.bounds[0] ,
+			"top": img.bounds[1] ,
+			"width": Math.abs(width),
+			"height": Math.abs(height)
+		});
+		img.$cutImg.css({
+			"left": -img.bounds[0] -1  ,
+			"top": -img.bounds[1] - 1
+		});
+	}
 	img.config.afterChange && img.config.afterChange($.extend([],img.bounds));
 }
 
@@ -694,7 +724,8 @@ var defaultConfig = {
 	beforeChange: null, // 返回true取消当前移动  两个参数 nowbounds ,changebounds
 	afterChange: null,
 	opacityVal: 0.6,
-	stopDragOpacity: 0
+	stopDragOpacity: 0,
+	use3d: true
 }
 
 window.imgCut = imgCut;

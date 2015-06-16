@@ -1,7 +1,6 @@
 .imgCutWrapDiv{
 	position: absolute;
 	background-color: black;
-	opacity: 0;
 	cursor: crosshair;
 }
 .imgCutWrapDiv .cutDiv{
@@ -14,9 +13,6 @@
 	display: none;
 	border: 1px #fff dashed;
 	cursor: move;
-	transform: translate3d(0,0,0);
-	-webkit-transform: translate3d(0,0,0);	/* Safari 和 Chrome */
-	-moz-transform: translate3d(0,0,0);
 }
 .imgCutWrapDiv .cutImg{
 	position: absolute;	
