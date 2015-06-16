@@ -9,8 +9,9 @@ var canUse3d = undefined;
 var prefix = "";
 
 function imgCut (imgDom, config) {
+	var img = new Image();
 	if(config.use3d !== false && canUse3d === undefined){
-		var style = imgDom.style;
+		var style = img.style;
 		canUse3d = true;
 		if("transform" in style){
 			prefix = "transform";
@@ -18,10 +19,13 @@ function imgCut (imgDom, config) {
 			prefix = "MozTransform";
 		}else if("webkitTransform" in style){
 			prefix = "webkitTransform";
+		}else if("msTransform" in style){
+			prefix = "msTransform";
 		}else{
 			canUse3d = false;
 		}
 	}
+	img = null;
 	return new ImgCut(imgDom,config);
 }
 
