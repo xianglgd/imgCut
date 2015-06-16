@@ -30,6 +30,8 @@ opacityVal： 0.6，拖拽时的透明度
 
 stopDragOpacity： 停止拖拽时的透明度
 
+use3d: true; 是否开启3D变换，默认为true 。在不支持3D的浏览器上依然采用原始的css变换
+
 beforeChange：null ，自定义方法，改变bounds之前执行，参数为 nowbounds ,changebounds。 如果返回 true 则该次变化取消.
 
 afterChange：null , 自定义方法，改变bounds后执行，参数为 nowBounds .
