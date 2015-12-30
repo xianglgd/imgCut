@@ -1,4 +1,4 @@
-(function(window,$,undefined){
+;(function(window,$,undefined){
 
 var KEYRIGHT = 39;
 var KEYTOP = 38;
@@ -734,4 +734,4 @@ var defaultConfig = {
 
 window.imgCut = imgCut;
 
-})(window,jQuery,undefined)
+})(window,jQuery);
